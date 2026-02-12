@@ -1,34 +1,18 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/cron/recurring-invoices.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/cron/recurring-invoices",
-      "dest": "/api/cron/recurring-invoices.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
-    }
+  },
+  "rewrites": [
+    { "source": "/api/cron/recurring-invoices", "destination": "/api/cron/recurring-invoices" },
+    { "source": "/(.*)", "destination": "/api" }
   ],
   "crons": [
     {
       "path": "/api/cron/recurring-invoices",
       "schedule": "0 8 * * *"
     }
-  ],
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 60
-    }
-  }
+  ]
 }
