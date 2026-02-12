@@ -5,7 +5,6 @@ const path = require('path');
 const { testConnection } = require('./src/config/database');
 const { initializeDatabase } = require('./src/config/initDatabase');
 const apiRoutes = require('./src/routes');
-const { startScheduler, processRecurringInvoices } = require('./src/services/invoiceScheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +17,22 @@ app.use(cors({
 app.use(express.json());
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
+// Initialize DB on first request (for serverless)
+let dbInitialized = false;
+app.use(async (req, res, next) => {
+  if (!dbInitialized) {
+    try {
+      await testConnection();
+      await initializeDatabase();
+      dbInitialized = true;
+    } catch (error) {
+      console.error('DB init error:', error.message);
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+  }
+  next();
+});
+
 // API Routes
 app.use('/api', apiRoutes);
 
@@ -26,9 +41,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Manual trigger for recurring invoices (for testing)
+// Manual trigger for recurring invoices
 app.post('/api/scheduler/run', async (req, res) => {
   try {
+    const { processRecurringInvoices } = require('./src/services/invoiceScheduler');
     await processRecurringInvoices();
     res.json({ success: true, message: 'Scheduler executed' });
   } catch (error) {
@@ -42,28 +58,31 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// Initialize database and start server
-async function startServer() {
-  try {
-    // Test database connection
-    await testConnection();
+// Only listen when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+  const cron = require('node-cron');
+  const { startScheduler } = require('./src/services/invoiceScheduler');
 
-    // Initialize database tables and default data
-    await initializeDatabase();
+  async function startServer() {
+    try {
+      await testConnection();
+      await initializeDatabase();
+      dbInitialized = true;
+      startScheduler();
 
-    // Start invoice scheduler
-    startScheduler();
-
-    // Start listening
-    app.listen(PORT, () => {
-      console.log(`\n🚀 Server running on port ${PORT}`);
-      console.log(`📊 API available at http://localhost:${PORT}/api`);
-      console.log(`💚 Health check at http://localhost:${PORT}/health\n`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+      app.listen(PORT, () => {
+        console.log(`\n🚀 Server running on port ${PORT}`);
+        console.log(`📊 API available at http://localhost:${PORT}/api`);
+        console.log(`💚 Health check at http://localhost:${PORT}/health\n`);
+      });
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    }
   }
+
+  startServer();
 }
 
-startServer();
+// Export for Vercel serverless
+module.exports = app;
