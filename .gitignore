@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# SQLite databases (legacy/unused)
+*.db
+*.sqlite
+
+# Logs
+*.log
+npm-debug.log*
+
+# Uploads (user content)
+backend/public/uploads/*
+!backend/public/uploads/.gitkeep
+
+# Build output
+frontend/build/
+
+# Claude Code
+.claude/
