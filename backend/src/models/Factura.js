@@ -8,7 +8,7 @@ class Factura {
       FROM facturas f
       LEFT JOIN clientes c ON f.cliente_id = c.id
       LEFT JOIN proyectos p ON f.proyecto_id = p.id
-      ORDER BY f.created_at DESC
+      ORDER BY CAST(f.numero AS UNSIGNED) DESC
     `);
     return rows;
   }
