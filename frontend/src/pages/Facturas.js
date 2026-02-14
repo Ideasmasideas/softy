@@ -54,7 +54,7 @@ function groupByQuarter(facturas) {
   return Object.keys(groups).sort().reverse().map(key => ({
     key,
     label: getQuarterLabel(key),
-    facturas: groups[key].sort((a, b) => parseInt(b.numero) - parseInt(a.numero)),
+    facturas: groups[key].sort((a, b) => parseInt(a.numero) - parseInt(b.numero)),
     totalFacturado: groups[key].reduce((sum, f) => sum + Number(f.subtotal), 0),
     totalIVA: groups[key].reduce((sum, f) => sum + (Number(f.subtotal) * Number(f.iva) / 100), 0)
   }));
