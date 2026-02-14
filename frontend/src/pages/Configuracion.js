@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Mail, Settings, CheckCircle, XCircle } from 'lucide-react';
+import { Save, Mail, Settings, CheckCircle, XCircle, FileEdit } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../context/ToastContext';
 
@@ -235,6 +235,159 @@ function EmailLogTab() {
   );
 }
 
+const VARIABLES_HELP = [
+  { var: '{cliente}', desc: 'Nombre del cliente' },
+  { var: '{empresa_cliente}', desc: 'Empresa del cliente' },
+  { var: '{numero}', desc: 'Número de factura' },
+  { var: '{total}', desc: 'Total con IVA' },
+  { var: '{subtotal}', desc: 'Subtotal sin IVA' },
+  { var: '{fecha}', desc: 'Fecha de emisión' },
+  { var: '{vencimiento}', desc: 'Fecha de vencimiento' },
+  { var: '{empresa}', desc: 'Nombre de tu empresa' },
+];
+
+function previewReplace(text) {
+  const sample = {
+    '{cliente}': 'Juan Pérez',
+    '{empresa_cliente}': 'Acme S.L.',
+    '{numero}': '260015',
+    '{total}': '1.210,00 €',
+    '{subtotal}': '1.000,00 €',
+    '{fecha}': '15/02/2026',
+    '{vencimiento}': '17/03/2026',
+    '{empresa}': 'ideasmasideas',
+  };
+  let result = text || '';
+  for (const [key, value] of Object.entries(sample)) {
+    result = result.split(key).join(value);
+  }
+  return result;
+}
+
+function EmailTemplateTab() {
+  const [asunto, setAsunto] = useState('');
+  const [mensaje, setMensaje] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    loadTemplate();
+  }, []);
+
+  async function loadTemplate() {
+    try {
+      const data = await api.getConfig();
+      setAsunto(data.email_asunto || 'Factura {numero} - {empresa}');
+      setMensaje(data.email_mensaje || 'Estimado/a {cliente},\n\nAdjunto encontrará la factura {numero} por un importe de {total}.\n\nFecha de vencimiento: {vencimiento}\n\nGracias por su confianza.\n\nSaludos,\n{empresa}');
+    } catch (error) {
+      addToast('Error al cargar plantilla', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.updateConfig({ email_asunto: asunto, email_mensaje: mensaje });
+      addToast('Plantilla guardada correctamente');
+    } catch (error) {
+      addToast(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return <div style={{ padding: 60, textAlign: 'center' }}>Cargando...</div>;
+  }
+
+  return (
+    <form onSubmit={handleSave}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div>
+          <div className="card">
+            <div className="card-header">
+              <h3 className="card-title">Plantilla del Email</h3>
+            </div>
+            <div className="card-body">
+              <div className="form-group">
+                <label className="form-label">Asunto</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={asunto}
+                  onChange={e => setAsunto(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mensaje</label>
+                <textarea
+                  className="form-textarea"
+                  value={mensaje}
+                  onChange={e => setMensaje(e.target.value)}
+                  rows={12}
+                  style={{ fontFamily: 'monospace', fontSize: 13 }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="card-header">
+              <h3 className="card-title">Variables disponibles</h3>
+            </div>
+            <div className="card-body" style={{ padding: 0 }}>
+              <table className="table">
+                <tbody>
+                  {VARIABLES_HELP.map(v => (
+                    <tr key={v.var}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 13, color: 'var(--primary)' }}>{v.var}</td>
+                      <td style={{ fontSize: 13, color: 'var(--gray-600)' }}>{v.desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }} disabled={saving}>
+            <Save size={16} />
+            {saving ? 'Guardando...' : 'Guardar Plantilla'}
+          </button>
+        </div>
+
+        <div>
+          <div className="card" style={{ position: 'sticky', top: 100 }}>
+            <div className="card-header">
+              <h3 className="card-title">Preview</h3>
+            </div>
+            <div className="card-body">
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--gray-500)', marginBottom: 4, fontWeight: 600 }}>Asunto</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{previewReplace(asunto)}</div>
+              </div>
+              <div style={{ borderTop: '1px solid var(--gray-200)', paddingTop: 16 }}>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--gray-500)', marginBottom: 8, fontWeight: 600 }}>Mensaje</div>
+                <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--gray-700)' }}>
+                  {previewReplace(mensaje).split('\n').map((line, i) => (
+                    <span key={i}>{line}<br /></span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginTop: 16, padding: 12, background: 'var(--gray-50)', borderRadius: 'var(--radius-md)', fontSize: 12, color: 'var(--gray-500)' }}>
+                + Factura adjunta en PDF
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  );
+}
+
 export default function Configuracion() {
   const [activeTab, setActiveTab] = useState('empresa');
 
@@ -257,6 +410,13 @@ export default function Configuracion() {
             Empresa
           </button>
           <button
+            className={`tab ${activeTab === 'email-template' ? 'active' : ''}`}
+            onClick={() => setActiveTab('email-template')}
+          >
+            <FileEdit size={16} />
+            Plantilla Email
+          </button>
+          <button
             className={`tab ${activeTab === 'email-log' ? 'active' : ''}`}
             onClick={() => setActiveTab('email-log')}
           >
@@ -266,6 +426,7 @@ export default function Configuracion() {
         </div>
 
         {activeTab === 'empresa' && <EmpresaTab />}
+        {activeTab === 'email-template' && <EmailTemplateTab />}
         {activeTab === 'email-log' && <EmailLogTab />}
       </div>
     </>

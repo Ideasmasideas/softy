@@ -179,7 +179,9 @@ async function initializeDatabase() {
       ('empresa_nif', 'ES 54245681C'),
       ('contador_factura', '260007'),
       ('empresa_iban', 'ES22 1465 01 20351742959555'),
-      ('empresa_bic', 'INGDESMMXXX')
+      ('empresa_bic', 'INGDESMMXXX'),
+      ('email_asunto', 'Factura {numero} - {empresa}'),
+      ('email_mensaje', 'Estimado/a {cliente},\n\nAdjunto encontrará la factura {numero} por un importe de {total}.\n\nFecha de vencimiento: {vencimiento}\n\nGracias por su confianza.\n\nSaludos,\n{empresa}')
     `);
 
     console.log('✓ Default configuration inserted');

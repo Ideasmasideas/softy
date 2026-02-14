@@ -16,6 +16,25 @@ function getLogoForEmail() {
   return null;
 }
 
+function replaceVariables(template, facturaData, config) {
+  const vars = {
+    '{cliente}': facturaData.cliente_nombre || '',
+    '{empresa_cliente}': facturaData.cliente_empresa || '',
+    '{numero}': facturaData.numero || '',
+    '{total}': Number(facturaData.total).toFixed(2) + ' €',
+    '{subtotal}': Number(facturaData.subtotal).toFixed(2) + ' €',
+    '{fecha}': facturaData.fecha || '',
+    '{vencimiento}': facturaData.fecha_vencimiento || 'No especificada',
+    '{empresa}': config.empresa_nombre || '',
+  };
+
+  let result = template || '';
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.split(key).join(value);
+  }
+  return result;
+}
+
 async function sendInvoiceEmail(facturaData) {
   const pdf = await generateInvoicePDF(facturaData);
   const config = facturaData.config;
@@ -25,18 +44,18 @@ async function sendInvoiceEmail(facturaData) {
     ? '<img src="cid:company_logo" alt="Logo" style="max-width:150px;max-height:80px;margin-bottom:16px;" /><br>'
     : '';
 
+  const subjectTemplate = config.email_asunto || 'Factura {numero} - {empresa}';
+  const bodyTemplate = config.email_mensaje || 'Estimado/a {cliente},\n\nAdjunto encontrará la factura {numero} por un importe de {total}.\n\nFecha de vencimiento: {vencimiento}\n\nGracias por su confianza.\n\nSaludos,\n{empresa}';
+
+  const subject = replaceVariables(subjectTemplate, facturaData, config);
+  const bodyText = replaceVariables(bodyTemplate, facturaData, config);
+  const bodyHtml = bodyText.split('\n').map(line => line ? `<p>${line}</p>` : '<br>').join('\n');
+
   const msg = {
     to: facturaData.cliente_email,
     from: config.empresa_email || process.env.SENDGRID_FROM_EMAIL,
-    subject: `Factura ${facturaData.numero} - ${config.empresa_nombre}`,
-    html: `
-      ${logoHtml}
-      <p>Estimado/a ${facturaData.cliente_nombre},</p>
-      <p>Adjunto encontrará la factura <strong>${facturaData.numero}</strong> por un importe de <strong>${Number(facturaData.total).toFixed(2)} €</strong>.</p>
-      <p>Fecha de vencimiento: ${facturaData.fecha_vencimiento ? new Date(facturaData.fecha_vencimiento).toLocaleDateString('es-ES') : 'No especificada'}</p>
-      <p>Gracias por su confianza.</p>
-      <p>Saludos,<br>${config.empresa_nombre}</p>
-    `,
+    subject,
+    html: `${logoHtml}${bodyHtml}`,
     attachments: [
       {
         content: pdf.toString('base64'),
