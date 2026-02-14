@@ -92,7 +92,7 @@ function generateInvoiceHTML(factura, lineas, config) {
 
       <div class="client-section">
         <div class="client-label">Facturar a</div>
-        <div class="client-name">${factura.cliente_nombre || ''}</div>
+        <div class="client-name">${factura.cliente_empresa || ''}</div>
         <div class="client-detail">
           ${factura.cliente_nif ? 'NIF: ' + factura.cliente_nif + '<br>' : ''}
           ${factura.cliente_direccion ? factura.cliente_direccion : ''}

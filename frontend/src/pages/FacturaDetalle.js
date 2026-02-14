@@ -161,11 +161,10 @@ export default function FacturaDetalle() {
 
           <div style={{ marginBottom: 32, padding: 16, background: 'var(--gray-50)', borderRadius: 'var(--radius-md)' }}>
             <div className="invoice-party-label">Facturar a</div>
-            <div className="invoice-party-name">{factura.cliente_empresa || factura.cliente_nombre}</div>
+            <div className="invoice-party-name">{factura.cliente_empresa}</div>
             <div className="invoice-party-detail">
-              {factura.cliente_nombre}<br />
-              {factura.cliente_direccion && <>{factura.cliente_direccion}<br /></>}
-              {factura.cliente_nif && `NIF: ${factura.cliente_nif}`}
+              {factura.cliente_nif && <>NIF: {factura.cliente_nif}<br /></>}
+              {factura.cliente_direccion && <>{factura.cliente_direccion}</>}
             </div>
           </div>
 
