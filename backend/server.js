@@ -44,8 +44,8 @@ app.get('/health', (req, res) => {
 // Manual trigger for recurring invoices
 app.post('/api/scheduler/run', async (req, res) => {
   try {
-    const { processRecurringInvoices } = require('./src/services/invoiceScheduler');
-    await processRecurringInvoices();
+    const { runAll } = require('./src/services/invoiceScheduler');
+    await runAll();
     res.json({ success: true, message: 'Scheduler executed' });
   } catch (error) {
     res.status(500).json({ error: error.message });

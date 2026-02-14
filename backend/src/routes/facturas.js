@@ -3,6 +3,7 @@ const router = express.Router();
 const facturaController = require('../controllers/facturaController');
 
 router.get('/next-number', facturaController.getNextNumber);
+router.get('/email-log', facturaController.getEmailLog);
 router.get('/', facturaController.getAll);
 router.get('/:id', facturaController.getById);
 router.post('/', facturaController.create);

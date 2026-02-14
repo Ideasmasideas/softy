@@ -45,6 +45,8 @@ class Factura {
     const { cliente_id, proyecto_id, fecha, fecha_vencimiento, lineas, notas, iva = 21, irpf = 15 } = data;
     const id = uuidv4();
     const numero = data.numero || await this.generateInvoiceNumber();
+    const estado = data.estado || 'borrador';
+    const fecha_envio_programado = this.toDateString(data.fecha_envio_programado) || null;
 
     const subtotal = lineas.reduce((sum, l) => sum + (l.cantidad * l.precio_unitario), 0);
     const irpfAmount = subtotal * (irpf / 100);
@@ -52,8 +54,8 @@ class Factura {
     const total = subtotal - irpfAmount + ivaAmount;
 
     await pool.query(
-      'INSERT INTO facturas (id, numero, cliente_id, proyecto_id, fecha, fecha_vencimiento, subtotal, iva, irpf, total, notas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, numero, cliente_id, proyecto_id || null, fecha, fecha_vencimiento || null, subtotal, iva, irpf, total, notas]
+      'INSERT INTO facturas (id, numero, cliente_id, proyecto_id, fecha, fecha_vencimiento, subtotal, iva, irpf, total, notas, estado, fecha_envio_programado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, numero, cliente_id, proyecto_id || null, fecha, fecha_vencimiento || null, subtotal, iva, irpf, total, notas, estado, fecha_envio_programado]
     );
 
     for (const linea of lineas) {
@@ -95,6 +97,7 @@ class Factura {
       if (data.fecha_vencimiento !== undefined) { setClauses.push('fecha_vencimiento=?'); values.push(this.toDateString(data.fecha_vencimiento) || null); }
       if (data.notas !== undefined) { setClauses.push('notas=?'); values.push(data.notas); }
       if (data.estado !== undefined) { setClauses.push('estado=?'); values.push(data.estado); }
+      if (data.fecha_envio_programado !== undefined) { setClauses.push('fecha_envio_programado=?'); values.push(this.toDateString(data.fecha_envio_programado) || null); }
 
       values.push(id);
       await pool.query(`UPDATE facturas SET ${setClauses.join(', ')} WHERE id=?`, values);
@@ -107,8 +110,15 @@ class Factura {
           [uuidv4(), id, linea.concepto, linea.cantidad, linea.precio_unitario, linea.cantidad * linea.precio_unitario]
         );
       }
-    } else if (estado) {
-      await pool.query('UPDATE facturas SET estado=? WHERE id=?', [estado, id]);
+    } else {
+      const setClauses = [];
+      const values = [];
+      if (data.estado !== undefined) { setClauses.push('estado=?'); values.push(data.estado); }
+      if (data.fecha_envio_programado !== undefined) { setClauses.push('fecha_envio_programado=?'); values.push(this.toDateString(data.fecha_envio_programado) || null); }
+      if (setClauses.length > 0) {
+        values.push(id);
+        await pool.query(`UPDATE facturas SET ${setClauses.join(', ')} WHERE id=?`, values);
+      }
     }
 
     const [rows] = await pool.query('SELECT * FROM facturas WHERE id = ?', [id]);
@@ -119,6 +129,16 @@ class Factura {
     await pool.query('DELETE FROM factura_lineas WHERE factura_id = ?', [id]);
     await pool.query('DELETE FROM facturas WHERE id = ?', [id]);
     return { success: true };
+  }
+
+  static async findProgramadas(fechaHoy) {
+    const [rows] = await pool.query(`
+      SELECT f.*, c.email as cliente_email
+      FROM facturas f
+      LEFT JOIN clientes c ON f.cliente_id = c.id
+      WHERE f.estado = 'programada' AND f.fecha_envio_programado <= ?
+    `, [fechaHoy]);
+    return rows;
   }
 
   static async generateInvoiceNumber() {

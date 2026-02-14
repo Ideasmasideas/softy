@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 
 const estadoLabels = {
   borrador: 'Borrador',
+  programada: 'Programada',
   enviada: 'Enviada',
   pagada: 'Pagada',
   vencida: 'Vencida'
@@ -53,7 +54,7 @@ function groupByQuarter(facturas) {
   return Object.keys(groups).sort().reverse().map(key => ({
     key,
     label: getQuarterLabel(key),
-    facturas: groups[key],
+    facturas: groups[key].sort((a, b) => parseInt(b.numero) - parseInt(a.numero)),
     totalFacturado: groups[key].reduce((sum, f) => sum + Number(f.subtotal), 0),
     totalIVA: groups[key].reduce((sum, f) => sum + (Number(f.subtotal) * Number(f.iva) / 100), 0)
   }));
@@ -300,7 +301,8 @@ export default function Facturas() {
                                   padding: '4px 8px',
                                   fontSize: 12,
                                   background: factura.estado === 'pagada' ? 'var(--success-light)' :
-                                             factura.estado === 'enviada' ? 'var(--warning-light)' : 'var(--gray-100)'
+                                             factura.estado === 'enviada' ? 'var(--warning-light)' :
+                                             factura.estado === 'programada' ? '#e0e7ff' : 'var(--gray-100)'
                                 }}
                               >
                                 {Object.entries(estadoLabels).map(([value, label]) => (

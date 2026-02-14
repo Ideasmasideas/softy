@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Save } from 'lucide-react';
+import { Save, Mail, Settings, CheckCircle, XCircle } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../context/ToastContext';
 
-export default function Configuracion() {
+function EmpresaTab() {
   const [config, setConfig] = useState({
     empresa_nombre: '',
     empresa_email: '',
@@ -50,135 +50,223 @@ export default function Configuracion() {
   }
 
   return (
+    <form onSubmit={handleSubmit}>
+      <div className="card" style={{ maxWidth: 640 }}>
+        <div className="card-header">
+          <h3 className="card-title">Datos de la Empresa</h3>
+        </div>
+        <div className="card-body">
+          <div className="form-group">
+            <label className="form-label">Nombre de la Empresa</label>
+            <input
+              type="text"
+              className="form-input"
+              value={config.empresa_nombre}
+              onChange={e => setConfig({ ...config, empresa_nombre: e.target.value })}
+              placeholder="Tu empresa S.L."
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input
+                type="email"
+                className="form-input"
+                value={config.empresa_email}
+                onChange={e => setConfig({ ...config, empresa_email: e.target.value })}
+                placeholder="contacto@tuempresa.com"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">NIF/CIF</label>
+              <input
+                type="text"
+                className="form-input"
+                value={config.empresa_nif}
+                onChange={e => setConfig({ ...config, empresa_nif: e.target.value })}
+                placeholder="B12345678"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Dirección</label>
+            <textarea
+              className="form-textarea"
+              value={config.empresa_direccion}
+              onChange={e => setConfig({ ...config, empresa_direccion: e.target.value })}
+              placeholder="Calle, número, CP, Ciudad"
+              rows={2}
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">IBAN</label>
+              <input
+                type="text"
+                className="form-input"
+                value={config.empresa_iban}
+                onChange={e => setConfig({ ...config, empresa_iban: e.target.value })}
+                placeholder="ES22 1465 01 20351742959555"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">BIC</label>
+              <input
+                type="text"
+                className="form-input"
+                value={config.empresa_bic}
+                onChange={e => setConfig({ ...config, empresa_bic: e.target.value })}
+                placeholder="INGDESMMXXX"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Contador de Facturas</label>
+            <input
+              type="text"
+              className="form-input"
+              value={config.contador_factura}
+              onChange={e => setConfig({ ...config, contador_factura: e.target.value })}
+              placeholder="260007"
+              style={{ width: 160 }}
+            />
+            <p style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>
+              La próxima factura usará este número. Se incrementa automáticamente.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" className="btn btn-primary" style={{ marginTop: 24 }} disabled={saving}>
+        <Save size={16} />
+        {saving ? 'Guardando...' : 'Guardar Configuración'}
+      </button>
+    </form>
+  );
+}
+
+function EmailLogTab() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
+  async function loadLogs() {
+    try {
+      const data = await api.getEmailLog();
+      setLogs(data);
+    } catch (error) {
+      addToast('Error al cargar log de emails', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return <div style={{ padding: 60, textAlign: 'center' }}>Cargando...</div>;
+  }
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h3 className="card-title">Historial de Emails Enviados</h3>
+        <span style={{ fontSize: 13, color: 'var(--gray-500)' }}>{logs.length} registros</span>
+      </div>
+      {logs.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--gray-500)' }}>
+          <Mail size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
+          <p>No hay emails enviados todavía</p>
+        </div>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Factura</th>
+              <th>Destinatario</th>
+              <th>Asunto</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map(log => (
+              <tr key={log.id}>
+                <td>
+                  <div style={{ fontSize: 13, whiteSpace: 'nowrap' }}>
+                    {new Date(log.created_at).toLocaleDateString('es-ES')}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--gray-500)' }}>
+                    {new Date(log.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </td>
+                <td>
+                  <span style={{ fontWeight: 600, fontFamily: 'Space Grotesk' }}>
+                    {log.factura_numero || '-'}
+                  </span>
+                </td>
+                <td style={{ fontSize: 13 }}>{log.destinatario}</td>
+                <td style={{ fontSize: 13, maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {log.asunto}
+                </td>
+                <td>
+                  {log.estado === 'enviado' ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--success)', fontSize: 12, fontWeight: 600 }}>
+                      <CheckCircle size={14} /> Enviado
+                    </span>
+                  ) : (
+                    <span title={log.error_mensaje} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--danger)', fontSize: 12, fontWeight: 600, cursor: 'help' }}>
+                      <XCircle size={14} /> Error
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+export default function Configuracion() {
+  const [activeTab, setActiveTab] = useState('empresa');
+
+  return (
     <>
       <header className="page-header">
         <div>
           <h1 className="page-title">Configuración</h1>
-          <p className="page-subtitle">Datos de tu empresa</p>
+          <p className="page-subtitle">Ajustes de la aplicación</p>
         </div>
       </header>
 
       <div className="page-content">
-        <form onSubmit={handleSubmit}>
-          <div className="card" style={{ maxWidth: 640 }}>
-            <div className="card-header">
-              <h3 className="card-title">Datos de la Empresa</h3>
-            </div>
-            <div className="card-body">
-              <div className="form-group">
-                <label className="form-label">Nombre de la Empresa</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={config.empresa_nombre}
-                  onChange={e => setConfig({ ...config, empresa_nombre: e.target.value })}
-                  placeholder="Tu empresa S.L."
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input 
-                    type="email" 
-                    className="form-input"
-                    value={config.empresa_email}
-                    onChange={e => setConfig({ ...config, empresa_email: e.target.value })}
-                    placeholder="contacto@tuempresa.com"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">NIF/CIF</label>
-                  <input 
-                    type="text" 
-                    className="form-input"
-                    value={config.empresa_nif}
-                    onChange={e => setConfig({ ...config, empresa_nif: e.target.value })}
-                    placeholder="B12345678"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Dirección</label>
-                <textarea 
-                  className="form-textarea"
-                  value={config.empresa_direccion}
-                  onChange={e => setConfig({ ...config, empresa_direccion: e.target.value })}
-                  placeholder="Calle, número, CP, Ciudad"
-                  rows={2}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">IBAN</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={config.empresa_iban}
-                    onChange={e => setConfig({ ...config, empresa_iban: e.target.value })}
-                    placeholder="ES22 1465 01 20351742959555"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">BIC</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={config.empresa_bic}
-                    onChange={e => setConfig({ ...config, empresa_bic: e.target.value })}
-                    placeholder="INGDESMMXXX"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Contador de Facturas</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={config.contador_factura}
-                  onChange={e => setConfig({ ...config, contador_factura: e.target.value })}
-                  placeholder="260007"
-                  style={{ width: 160 }}
-                />
-                <p style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>
-                  La próxima factura usará este número. Se incrementa automáticamente.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card" style={{ maxWidth: 640, marginTop: 24 }}>
-            <div className="card-header">
-              <h3 className="card-title">Configuración de Email (SendGrid)</h3>
-            </div>
-            <div className="card-body">
-              <p style={{ color: 'var(--gray-500)', marginBottom: 16 }}>
-                Para enviar facturas por email, configura SendGrid en el archivo .env del backend:
-              </p>
-              <pre style={{
-                background: 'var(--gray-100)',
-                padding: 16,
-                borderRadius: 'var(--radius-md)',
-                fontSize: 13,
-                overflow: 'auto'
-              }}>
-{`SENDGRID_API_KEY=tu-sendgrid-api-key
-SENDGRID_FROM_EMAIL=info@ideasmasideas.com`}
-              </pre>
-              <p style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 12 }}>
-                Obtén tu API key de SendGrid en: <a href="https://app.sendgrid.com/settings/api_keys" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>app.sendgrid.com/settings/api_keys</a>
-              </p>
-            </div>
-          </div>
-
-          <button type="submit" className="btn btn-primary" style={{ marginTop: 24 }} disabled={saving}>
-            <Save size={16} />
-            {saving ? 'Guardando...' : 'Guardar Configuración'}
+        <div className="tabs" style={{ marginBottom: 24 }}>
+          <button
+            className={`tab ${activeTab === 'empresa' ? 'active' : ''}`}
+            onClick={() => setActiveTab('empresa')}
+          >
+            <Settings size={16} />
+            Empresa
           </button>
-        </form>
+          <button
+            className={`tab ${activeTab === 'email-log' ? 'active' : ''}`}
+            onClick={() => setActiveTab('email-log')}
+          >
+            <Mail size={16} />
+            Log de Emails
+          </button>
+        </div>
+
+        {activeTab === 'empresa' && <EmpresaTab />}
+        {activeTab === 'email-log' && <EmailLogTab />}
       </div>
     </>
   );

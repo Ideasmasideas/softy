@@ -65,7 +65,8 @@ async function initializeDatabase() {
         iva DECIMAL(5,2) DEFAULT 21,
         irpf DECIMAL(5,2) DEFAULT 15,
         total DECIMAL(10,2) NOT NULL,
-        estado ENUM('borrador', 'enviada', 'pagada', 'vencida') DEFAULT 'borrador',
+        estado ENUM('borrador', 'programada', 'enviada', 'pagada', 'vencida') DEFAULT 'borrador',
+        fecha_envio_programado DATE,
         notas TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (cliente_id) REFERENCES clientes(id),
@@ -144,6 +145,28 @@ async function initializeDatabase() {
         UNIQUE KEY unique_proyecto_usuario (proyecto_id, usuario_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS email_log (
+        id VARCHAR(36) PRIMARY KEY,
+        factura_id VARCHAR(36),
+        factura_numero VARCHAR(50),
+        destinatario VARCHAR(255) NOT NULL,
+        asunto VARCHAR(500),
+        estado ENUM('enviado', 'error') DEFAULT 'enviado',
+        error_mensaje TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Migrations for existing tables
+    try {
+      await pool.query("ALTER TABLE facturas ADD COLUMN fecha_envio_programado DATE AFTER estado");
+    } catch (e) { /* column already exists */ }
+    try {
+      await pool.query("ALTER TABLE facturas MODIFY estado ENUM('borrador', 'programada', 'enviada', 'pagada', 'vencida') DEFAULT 'borrador'");
+    } catch (e) { /* already modified */ }
 
     console.log('✓ Database tables created successfully');
 

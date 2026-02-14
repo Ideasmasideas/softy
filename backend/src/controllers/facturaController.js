@@ -1,4 +1,5 @@
 const Factura = require('../models/Factura');
+const EmailLog = require('../models/EmailLog');
 const Configuracion = require('../models/Configuracion');
 const { generateInvoicePDF } = require('../utils/pdfGenerator');
 const { sendInvoiceEmail } = require('../utils/emailSender');
@@ -100,10 +101,43 @@ exports.sendEmail = async (req, res) => {
     // Update invoice status
     await Factura.update(req.params.id, { estado: 'enviada' });
 
+    // Log email
+    await EmailLog.create({
+      factura_id: req.params.id,
+      factura_numero: facturaData.numero,
+      destinatario: facturaData.cliente_email,
+      asunto: `Factura ${facturaData.numero} - ${facturaData.config?.empresa_nombre || ''}`,
+      estado: 'enviado'
+    });
+
     res.json({ success: true, message: 'Factura enviada correctamente' });
   } catch (error) {
     console.error('Error sending email:', error);
     const errorMsg = error.response?.body?.errors?.[0]?.message || error.message;
+
+    // Log error
+    try {
+      const facturaData = await Factura.findById(req.params.id);
+      await EmailLog.create({
+        factura_id: req.params.id,
+        factura_numero: facturaData?.numero,
+        destinatario: facturaData?.cliente_email || 'desconocido',
+        asunto: `Factura ${facturaData?.numero || '?'}`,
+        estado: 'error',
+        error_mensaje: errorMsg
+      });
+    } catch (logErr) { /* ignore log errors */ }
+
     res.status(500).json({ error: 'Error enviando email: ' + errorMsg });
+  }
+};
+
+exports.getEmailLog = async (req, res) => {
+  try {
+    const logs = await EmailLog.findAll();
+    res.json(logs);
+  } catch (error) {
+    console.error('Error fetching email log:', error);
+    res.status(500).json({ error: 'Error al obtener log de emails' });
   }
 };

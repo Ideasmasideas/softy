@@ -33,6 +33,8 @@ export default function NuevaFactura() {
     iva: 21,
     irpf: 15,
     notas: 'Terms of payment: Bank transfer\nIBAN: ES22 1465 01 20351742959555\nBIC: INGDESMMXXX',
+    programar_envio: false,
+    fecha_envio_programado: '',
     lineas: [{ concepto: '', cantidad: 1, precio_unitario: 0 }]
   });
 
@@ -60,6 +62,8 @@ export default function NuevaFactura() {
           iva: Number(factura.iva) || 21,
           irpf: Number(factura.irpf) || 0,
           notas: factura.notas || '',
+          programar_envio: factura.estado === 'programada',
+          fecha_envio_programado: toDateInput(factura.fecha_envio_programado),
           lineas: (factura.lineas || []).map(l => ({
             concepto: l.concepto,
             cantidad: Number(l.cantidad),
@@ -139,12 +143,15 @@ export default function NuevaFactura() {
     try {
       const payload = {
         ...formData,
+        estado: formData.programar_envio ? 'programada' : undefined,
+        fecha_envio_programado: formData.programar_envio ? formData.fecha_envio_programado : undefined,
         lineas: formData.lineas.map(l => ({
           ...l,
           cantidad: parseFloat(l.cantidad) || 1,
           precio_unitario: parseFloat(l.precio_unitario) || 0
         }))
       };
+      delete payload.programar_envio;
 
       if (isEditing) {
         await api.updateFactura(editId, payload);
@@ -398,8 +405,34 @@ export default function NuevaFactura() {
                     />
                   </div>
 
+                  <div style={{ borderTop: '1px solid var(--gray-200)', paddingTop: 16, marginTop: 16 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.programar_envio}
+                        onChange={e => setFormData({ ...formData, programar_envio: e.target.checked, fecha_envio_programado: e.target.checked ? formData.fecha : '' })}
+                      />
+                      Programar envío automático
+                    </label>
+                    {formData.programar_envio && (
+                      <div className="form-group" style={{ marginTop: 8 }}>
+                        <label className="form-label">Fecha de envío</label>
+                        <input
+                          type="date"
+                          className="form-input"
+                          value={formData.fecha_envio_programado}
+                          onChange={e => setFormData({ ...formData, fecha_envio_programado: e.target.value })}
+                          required
+                        />
+                        <span style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4, display: 'block' }}>
+                          Se enviará automáticamente en esta fecha
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
                   <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 16 }}>
-                    {isEditing ? 'Guardar Cambios' : 'Crear Factura'}
+                    {isEditing ? 'Guardar Cambios' : formData.programar_envio ? 'Crear y Programar' : 'Crear Factura'}
                   </button>
                 </div>
               </div>

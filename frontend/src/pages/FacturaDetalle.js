@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 
 const estadoLabels = {
   borrador: 'Borrador',
+  programada: 'Programada',
   enviada: 'Enviada',
   pagada: 'Pagada',
   vencida: 'Vencida'

@@ -1,6 +1,6 @@
 const { testConnection } = require('../../src/config/database');
 const { initializeDatabase } = require('../../src/config/initDatabase');
-const { processRecurringInvoices } = require('../../src/services/invoiceScheduler');
+const { runAll } = require('../../src/services/invoiceScheduler');
 
 module.exports = async function handler(req, res) {
   // Verify the request comes from Vercel Cron
@@ -11,8 +11,8 @@ module.exports = async function handler(req, res) {
   try {
     await testConnection();
     await initializeDatabase();
-    await processRecurringInvoices();
-    res.json({ success: true, message: 'Recurring invoices processed' });
+    await runAll();
+    res.json({ success: true, message: 'Scheduled and recurring invoices processed' });
   } catch (error) {
     console.error('Cron error:', error);
     res.status(500).json({ error: error.message });

@@ -51,6 +51,7 @@ export const api = {
   updateFactura: (id, data) => request(`/facturas/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteFactura: (id) => request(`/facturas/${id}`, { method: 'DELETE' }),
   sendFactura: (id) => request(`/facturas/${id}/enviar`, { method: 'POST' }),
+  getEmailLog: () => request('/facturas/email-log'),
   getFacturaPDF: (id) => `${API_URL}/facturas/${id}/pdf`,
   getLogo: () => `${API_URL.replace('/api', '')}/public/uploads/logo.png`,
 
