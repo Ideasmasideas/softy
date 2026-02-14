@@ -10,8 +10,9 @@ router.post('/', facturaController.create);
 router.put('/:id', facturaController.update);
 router.delete('/:id', facturaController.delete);
 
-// PDF & Email
+// PDF, Email & Duplicate
 router.get('/:id/pdf', facturaController.generatePDF);
 router.post('/:id/enviar', facturaController.sendEmail);
+router.post('/:id/duplicar', facturaController.duplicate);
 
 module.exports = router;

@@ -132,6 +132,40 @@ exports.sendEmail = async (req, res) => {
   }
 };
 
+exports.duplicate = async (req, res) => {
+  try {
+    const original = await Factura.findById(req.params.id);
+    if (!original) {
+      return res.status(404).json({ error: 'Factura no encontrada' });
+    }
+
+    const nuevoNumero = await Factura.getNextNumber();
+    const hoy = new Date().toISOString().split('T')[0];
+
+    const nuevaFactura = await Factura.create({
+      numero: nuevoNumero,
+      cliente_id: original.cliente_id,
+      proyecto_id: original.proyecto_id,
+      fecha: hoy,
+      fecha_vencimiento: null,
+      iva: original.iva,
+      irpf: original.irpf,
+      notas: original.notas,
+      estado: 'borrador',
+      lineas: original.lineas.map(l => ({
+        concepto: l.concepto,
+        cantidad: l.cantidad,
+        precio_unitario: l.precio_unitario
+      }))
+    });
+
+    res.status(201).json(nuevaFactura);
+  } catch (error) {
+    console.error('Error duplicating factura:', error);
+    res.status(500).json({ error: 'Error al duplicar factura' });
+  }
+};
+
 exports.getEmailLog = async (req, res) => {
   try {
     const logs = await EmailLog.findAll();

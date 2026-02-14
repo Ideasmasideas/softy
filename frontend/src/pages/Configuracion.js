@@ -244,6 +244,7 @@ const VARIABLES_HELP = [
   { var: '{fecha}', desc: 'Fecha de emisión' },
   { var: '{vencimiento}', desc: 'Fecha de vencimiento' },
   { var: '{empresa}', desc: 'Nombre de tu empresa' },
+  { var: '{logo}', desc: 'Logo de la empresa' },
 ];
 
 function previewReplace(text) {
@@ -256,6 +257,7 @@ function previewReplace(text) {
     '{fecha}': '15/02/2026',
     '{vencimiento}': '17/03/2026',
     '{empresa}': 'ideasmasideas',
+    '{logo}': '[Logo]',
   };
   let result = text || '';
   for (const [key, value] of Object.entries(sample)) {
@@ -373,7 +375,12 @@ function EmailTemplateTab() {
                 <div style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--gray-500)', marginBottom: 8, fontWeight: 600 }}>Mensaje</div>
                 <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--gray-700)' }}>
                   {previewReplace(mensaje).split('\n').map((line, i) => (
-                    <span key={i}>{line}<br /></span>
+                    <span key={i}>
+                      {line === '[Logo]' ? (
+                        <span style={{ display: 'inline-block', padding: '8px 16px', background: 'var(--gray-100)', border: '1px dashed var(--gray-400)', borderRadius: 4, fontSize: 12, color: 'var(--gray-500)' }}>Logo empresa</span>
+                      ) : line}
+                      <br />
+                    </span>
                   ))}
                 </div>
               </div>

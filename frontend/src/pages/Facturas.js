@@ -8,6 +8,7 @@ import {
   Send,
   Eye,
   Edit3,
+  Copy,
   MoreVertical,
   Trash2,
   ChevronDown,
@@ -89,6 +90,17 @@ export default function Facturas() {
     try {
       await api.sendFactura(factura.id);
       addToast('Factura enviada correctamente');
+      loadFacturas();
+    } catch (error) {
+      addToast(error.message, 'error');
+    }
+    setShowMenu(null);
+  }
+
+  async function handleDuplicate(factura) {
+    try {
+      await api.duplicateFactura(factura.id);
+      addToast('Factura duplicada correctamente');
       loadFacturas();
     } catch (error) {
       addToast(error.message, 'error');
@@ -340,6 +352,10 @@ export default function Facturas() {
                                       <button className="dropdown-item" onClick={() => { setShowMenu(null); navigate(`/facturas/${factura.id}/editar`); }}>
                                         <Edit3 size={16} />
                                         Editar
+                                      </button>
+                                      <button className="dropdown-item" onClick={() => handleDuplicate(factura)}>
+                                        <Copy size={16} />
+                                        Duplicar
                                       </button>
                                       <button className="dropdown-item" onClick={() => handleSend(factura)}>
                                         <Send size={16} />
