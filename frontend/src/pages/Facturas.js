@@ -270,9 +270,9 @@ export default function Facturas() {
                               )}
                             </td>
                             <td>
-                              <div>{factura.cliente_nombre}</div>
+                              <div style={{ fontWeight: 600 }}>{factura.cliente_empresa || factura.cliente_nombre}</div>
                               {factura.cliente_empresa && (
-                                <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>{factura.cliente_empresa}</div>
+                                <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>{factura.cliente_nombre}</div>
                               )}
                             </td>
                             <td>
