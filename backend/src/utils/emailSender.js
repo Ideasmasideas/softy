@@ -41,7 +41,7 @@ async function sendInvoiceEmail(facturaData) {
   const logoBase64 = getLogoForEmail();
 
   const logoHtml = logoBase64
-    ? '<img src="cid:company_logo" alt="Logo" style="max-width:150px;max-height:80px;margin-bottom:16px;" /><br>'
+    ? '<br><img src="cid:company_logo" alt="Logo" style="max-width:150px;max-height:70px;" />'
     : '';
 
   const subjectTemplate = config.email_asunto || 'Factura {numero} - {empresa}';
@@ -55,7 +55,7 @@ async function sendInvoiceEmail(facturaData) {
     to: facturaData.cliente_email,
     from: config.empresa_email || process.env.SENDGRID_FROM_EMAIL,
     subject,
-    html: `${logoHtml}${bodyHtml}`,
+    html: `${bodyHtml}${logoHtml}`,
     attachments: [
       {
         content: pdf.toString('base64'),
