@@ -149,16 +149,19 @@ BIC: ${config.empresa_bic || ''}${factura.notas ? '\n\n' + factura.notas : ''}</
 
 async function generateInvoicePDF(facturaData) {
   const html = generateInvoiceHTML(facturaData, facturaData.lineas, facturaData.config);
+  const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
   let browser;
-  if (process.env.VERCEL) {
+  if (isServerless) {
     const chromium = require('@sparticuz/chromium');
     const puppeteer = require('puppeteer-core');
+    chromium.setHeadlessMode = true;
+    chromium.setGraphicsMode = false;
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless
+      headless: true
     });
   } else {
     const puppeteer = require('puppeteer');
