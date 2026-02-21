@@ -116,7 +116,7 @@ async function initializeDatabase() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracion (
         clave VARCHAR(100) PRIMARY KEY,
-        valor TEXT
+        valor MEDIUMTEXT
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
@@ -229,6 +229,9 @@ async function initializeDatabase() {
       ('email_asunto', 'Factura {numero} - {empresa}'),
       ('email_mensaje', 'Estimado/a {cliente},\n\nAdjunto encontrará la factura {numero} por un importe de {total}.\n\nFecha de vencimiento: {vencimiento}\n\nGracias por su confianza.\n\nSaludos,\n{empresa}')
     `);
+
+    // Migrate valor column to MEDIUMTEXT if needed (for logo base64)
+    await pool.query(`ALTER TABLE configuracion MODIFY valor MEDIUMTEXT`);
 
     console.log('✓ Default configuration inserted');
 

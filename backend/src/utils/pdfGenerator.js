@@ -1,12 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 
-function getLogoBase64() {
+function getLogoBase64(config) {
+  // First try from DB (works on Vercel)
+  if (config && config.empresa_logo_base64) {
+    return config.empresa_logo_base64;
+  }
+  // Fallback to filesystem (local dev)
   const logoPath = path.join(__dirname, '../../public/uploads/logo.png');
   if (fs.existsSync(logoPath)) {
     const data = fs.readFileSync(logoPath);
-    const ext = path.extname(logoPath).slice(1).replace('jpg', 'jpeg');
-    return `data:image/${ext};base64,${data.toString('base64')}`;
+    return `data:image/png;base64,${data.toString('base64')}`;
   }
   return null;
 }
@@ -15,7 +19,7 @@ function generateInvoiceHTML(factura, lineas, config) {
   const irpfAmount = Number(factura.subtotal) * (Number(factura.irpf) / 100);
   const ivaAmount = Number(factura.subtotal) * (Number(factura.iva) / 100);
 
-  const logoBase64 = getLogoBase64();
+  const logoBase64 = getLogoBase64(config);
 
   return `
     <!DOCTYPE html>
@@ -176,7 +180,7 @@ async function generateInvoicePDF(facturaData) {
   const pdf = await page.pdf({ format: 'A4', printBackground: true });
   await browser.close();
 
-  return pdf;
+  return Buffer.from(pdf);
 }
 
 module.exports = { generateInvoicePDF };

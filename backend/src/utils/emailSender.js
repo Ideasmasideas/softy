@@ -8,7 +8,15 @@ if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-function getLogoForEmail() {
+function getLogoForEmail(config) {
+  // First try from DB (works on Vercel)
+  if (config && config.empresa_logo_base64) {
+    // Strip data URI prefix if present to get raw base64
+    const raw = config.empresa_logo_base64;
+    const match = raw.match(/^data:[^;]+;base64,(.+)$/);
+    return match ? match[1] : raw;
+  }
+  // Fallback to filesystem (local dev)
   const logoPath = path.join(__dirname, '../../public/uploads/logo.png');
   if (fs.existsSync(logoPath)) {
     return fs.readFileSync(logoPath).toString('base64');
@@ -39,7 +47,7 @@ function replaceVariables(template, facturaData, config, logoHtml) {
 async function sendInvoiceEmail(facturaData) {
   const pdf = await generateInvoicePDF(facturaData);
   const config = facturaData.config;
-  const logoBase64 = getLogoForEmail();
+  const logoBase64 = getLogoForEmail(config);
 
   const logoHtml = logoBase64
     ? '<img src="cid:company_logo" alt="Logo" style="max-width:150px;max-height:70px;" />'
