@@ -62,7 +62,7 @@ async function sendInvoiceEmail(facturaData) {
     html: bodyHtml,
     attachments: [
       {
-        content: pdf.toString('base64'),
+        content: Buffer.from(pdf).toString('base64'),
         filename: `factura-${facturaData.numero}.pdf`,
         type: 'application/pdf',
         disposition: 'attachment'
