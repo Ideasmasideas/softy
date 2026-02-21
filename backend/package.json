@@ -12,11 +12,14 @@
     "test:db": "node test-connection.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@sendgrid/mail": "^8.1.6",
     "@sparticuz/chromium": "^131.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
+    "googleapis": "^171.4.0",
+    "multer": "^2.0.2",
     "mysql2": "^3.16.2",
     "node-cron": "^4.2.1",
     "puppeteer": "^22.0.0",

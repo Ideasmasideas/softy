@@ -84,6 +84,94 @@ class Dashboard {
 
     return ganttData;
   }
+
+  static async getFiscalData(year) {
+    // Facturas por trimestre
+    const [facturasTrimestre] = await pool.query(`
+      SELECT
+        QUARTER(fecha) as trimestre,
+        COALESCE(SUM(subtotal), 0) as base_imponible,
+        COALESCE(SUM(subtotal * iva / 100), 0) as iva_repercutido,
+        COALESCE(SUM(subtotal * irpf / 100), 0) as irpf_retenido
+      FROM facturas
+      WHERE YEAR(fecha) = ?
+      GROUP BY QUARTER(fecha)
+      ORDER BY trimestre
+    `, [year]);
+
+    // Gastos deducibles por trimestre
+    const [gastosTrimestre] = await pool.query(`
+      SELECT
+        QUARTER(fecha) as trimestre,
+        COALESCE(SUM(CASE WHEN deducible = 1 THEN base_imponible ELSE 0 END), 0) as gastos_deducibles,
+        COALESCE(SUM(CASE WHEN deducible = 1 THEN base_imponible * iva_soportado / 100 ELSE 0 END), 0) as iva_soportado
+      FROM gastos
+      WHERE YEAR(fecha) = ?
+      GROUP BY QUARTER(fecha)
+      ORDER BY trimestre
+    `, [year]);
+
+    // Build trimestres
+    const trimestres = [];
+    for (let q = 1; q <= 4; q++) {
+      const fData = facturasTrimestre.find(f => f.trimestre === q) || { base_imponible: 0, iva_repercutido: 0, irpf_retenido: 0 };
+      const gData = gastosTrimestre.find(g => g.trimestre === q) || { gastos_deducibles: 0, iva_soportado: 0 };
+
+      const rendimiento_neto = Number(fData.base_imponible) - Number(gData.gastos_deducibles);
+      const iva_a_pagar = Number(fData.iva_repercutido) - Number(gData.iva_soportado);
+      const irpf_estimado = rendimiento_neto * 0.20;
+
+      trimestres.push({
+        trimestre: q,
+        base_imponible: Number(fData.base_imponible),
+        iva_repercutido: Number(fData.iva_repercutido),
+        irpf_retenido: Number(fData.irpf_retenido),
+        gastos_deducibles: Number(gData.gastos_deducibles),
+        iva_soportado: Number(gData.iva_soportado),
+        iva_a_pagar: iva_a_pagar,
+        rendimiento_neto: rendimiento_neto,
+        irpf_estimado: irpf_estimado > 0 ? irpf_estimado : 0
+      });
+    }
+
+    // Totales anuales
+    const totales = {
+      ingresos_brutos: trimestres.reduce((s, t) => s + t.base_imponible, 0),
+      gastos_deducibles: trimestres.reduce((s, t) => s + t.gastos_deducibles, 0),
+      rendimiento_neto: trimestres.reduce((s, t) => s + t.rendimiento_neto, 0),
+      iva_repercutido: trimestres.reduce((s, t) => s + t.iva_repercutido, 0),
+      iva_soportado: trimestres.reduce((s, t) => s + t.iva_soportado, 0),
+      iva_a_ingresar: trimestres.reduce((s, t) => s + t.iva_a_pagar, 0),
+      irpf_retenido: trimestres.reduce((s, t) => s + t.irpf_retenido, 0),
+      irpf_estimado: trimestres.reduce((s, t) => s + t.irpf_estimado, 0)
+    };
+
+    // Alertas de vencimientos fiscales
+    const hoy = new Date();
+    const fechasModelo303 = [
+      new Date(year, 0, 20), // 20 enero (T4 anterior)
+      new Date(year, 3, 20), // 20 abril (T1)
+      new Date(year, 6, 20), // 20 julio (T2)
+      new Date(year, 9, 20)  // 20 octubre (T3)
+    ];
+    const alertas = [];
+    const trimestreLabels = ['T4 ' + (year - 1), 'T1 ' + year, 'T2 ' + year, 'T3 ' + year];
+
+    fechasModelo303.forEach((fecha, i) => {
+      const diffDias = Math.ceil((fecha - hoy) / (1000 * 60 * 60 * 24));
+      if (diffDias > -30 && diffDias <= 30) {
+        alertas.push({
+          modelo: 'Modelo 303 / 130',
+          trimestre: trimestreLabels[i],
+          fecha: fecha.toISOString().split('T')[0],
+          dias_restantes: diffDias,
+          estado: diffDias < 0 ? 'vencido' : diffDias <= 7 ? 'urgente' : diffDias <= 15 ? 'proximo' : 'ok'
+        });
+      }
+    });
+
+    return { trimestres, totales, alertas };
+  }
 }
 
 module.exports = Dashboard;

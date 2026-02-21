@@ -147,6 +147,52 @@ async function initializeDatabase() {
     `);
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS gastos (
+        id VARCHAR(36) PRIMARY KEY,
+        descripcion VARCHAR(255) NOT NULL,
+        importe DECIMAL(10,2) NOT NULL,
+        fecha DATE NOT NULL,
+        categoria ENUM('hosting','software','subcontratacion','dietas','material','transporte','telefonia','formacion','otros') DEFAULT 'otros',
+        iva_soportado DECIMAL(5,2) DEFAULT 21,
+        base_imponible DECIMAL(10,2),
+        proyecto_id VARCHAR(36),
+        cliente_id VARCHAR(36),
+        proveedor VARCHAR(255),
+        numero_factura VARCHAR(100),
+        deducible TINYINT(1) DEFAULT 1,
+        archivo VARCHAR(255),
+        notas TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE SET NULL,
+        FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS recordatorios (
+        id VARCHAR(36) PRIMARY KEY,
+        titulo VARCHAR(255) NOT NULL,
+        descripcion TEXT,
+        cuadrante ENUM('hacer_ahora','programar','rapido','algun_dia') DEFAULT 'hacer_ahora',
+        fecha_vencimiento DATE,
+        recurrente ENUM('ninguna','diario','semanal','mensual','trimestral','semestral','anual') DEFAULT 'ninguna',
+        completada TINYINT(1) DEFAULT 0,
+        categoria ENUM('negocio','fiscal','cliente','personal') DEFAULT 'negocio',
+        fijado TINYINT(1) DEFAULT 0,
+        proyecto_id VARCHAR(36),
+        notas TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Migration: add trimestral, semestral, anual to recurrente ENUM
+    await pool.query(`
+      ALTER TABLE recordatorios MODIFY COLUMN recurrente
+      ENUM('ninguna','diario','semanal','mensual','trimestral','semestral','anual') DEFAULT 'ninguna'
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS email_log (
         id VARCHAR(36) PRIMARY KEY,
         factura_id VARCHAR(36),
@@ -187,7 +233,7 @@ async function initializeDatabase() {
     console.log('✓ Default configuration inserted');
 
     // Create default admin user
-    const adminPermisos = JSON.stringify(['clientes', 'proyectos', 'facturas', 'tareas', 'usuarios', 'configuracion', 'gantt']);
+    const adminPermisos = JSON.stringify(['clientes', 'proyectos', 'facturas', 'tareas', 'usuarios', 'configuracion', 'gantt', 'gastos', 'fiscal']);
     await pool.query(`
       INSERT IGNORE INTO usuarios (id, nombre, email, password, rol, permisos)
       VALUES ('admin-default', 'Administrador', 'admin@ideasmasideas.com', 'admin123', 'admin', ?)
