@@ -12,7 +12,9 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
-  GripVertical
+  GripVertical,
+  Sparkles,
+  Loader
 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../context/ToastContext';
@@ -51,6 +53,11 @@ export default function ProyectoDetalle() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiTareas, setAiTareas] = useState([]);
+  const [aiSelected, setAiSelected] = useState({});
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCreating, setAiCreating] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [localGroups, setLocalGroups] = useState([]);
   const [editingTarea, setEditingTarea] = useState(null);
@@ -192,6 +199,54 @@ export default function ProyectoDetalle() {
     }
   }
 
+  async function handleGenerateAI() {
+    setAiLoading(true);
+    setShowAIModal(true);
+    try {
+      const { tareas } = await api.generateTasks({
+        nombre: proyecto.nombre,
+        descripcion: proyecto.descripcion,
+        tipo: proyecto.tipo
+      });
+      setAiTareas(tareas);
+      const selected = {};
+      tareas.forEach((_, i) => { selected[i] = true; });
+      setAiSelected(selected);
+    } catch (error) {
+      addToast('Error al generar tareas con IA', 'error');
+      setShowAIModal(false);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  async function handleCreateAITareas() {
+    setAiCreating(true);
+    try {
+      const tareasToCreate = aiTareas.filter((_, i) => aiSelected[i]);
+      for (const tarea of tareasToCreate) {
+        await api.createTarea({
+          proyecto_id: id,
+          titulo: tarea.titulo,
+          descripcion: tarea.descripcion,
+          horas: tarea.horas || 0,
+          grupo: tarea.grupo || '',
+          fecha: format(new Date(), 'yyyy-MM-dd'),
+          estado: 'pendiente'
+        });
+      }
+      addToast(`${tareasToCreate.length} tareas creadas correctamente`);
+      setShowAIModal(false);
+      setAiTareas([]);
+      setAiSelected({});
+      loadProyecto();
+    } catch (error) {
+      addToast(error.message, 'error');
+    } finally {
+      setAiCreating(false);
+    }
+  }
+
   function toggleGroup(groupName) {
     setCollapsedGroups(prev => ({
       ...prev,
@@ -276,6 +331,10 @@ export default function ProyectoDetalle() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary" onClick={handleGenerateAI}>
+            <Sparkles size={16} />
+            Generar con IA
+          </button>
           <button className="btn btn-secondary" onClick={() => setShowEditModal(true)}>
             <Pencil size={16} />
             Editar
@@ -782,6 +841,82 @@ export default function ProyectoDetalle() {
             autoFocus
           />
         </div>
+      </Modal>
+
+      {/* Modal IA Tareas */}
+      <Modal
+        isOpen={showAIModal}
+        onClose={() => { if (!aiLoading && !aiCreating) { setShowAIModal(false); setAiTareas([]); setAiSelected({}); } }}
+        title="Generar Tareas con IA"
+        footer={
+          !aiLoading && aiTareas.length > 0 && (
+            <>
+              <button className="btn btn-secondary" onClick={() => { setShowAIModal(false); setAiTareas([]); setAiSelected({}); }}>Cancelar</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleCreateAITareas}
+                disabled={aiCreating || Object.values(aiSelected).filter(Boolean).length === 0}
+              >
+                {aiCreating ? 'Creando...' : `Crear ${Object.values(aiSelected).filter(Boolean).length} tareas`}
+              </button>
+            </>
+          )
+        }
+      >
+        {aiLoading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Loader size={32} style={{ animation: 'spin 1s linear infinite' }} color="var(--primary)" />
+            <p style={{ marginTop: 16, color: 'var(--gray-500)' }}>Generando tareas con IA...</p>
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          </div>
+        ) : (
+          <div>
+            {(() => {
+              const groups = {};
+              aiTareas.forEach((t, i) => {
+                const g = t.grupo || 'Sin grupo';
+                if (!groups[g]) groups[g] = [];
+                groups[g].push({ ...t, _index: i });
+              });
+              return Object.entries(groups).map(([grupo, tareas]) => (
+                <div key={grupo} style={{ marginBottom: 16 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, color: 'var(--primary)' }}>{grupo}</div>
+                  {tareas.map(tarea => (
+                    <label
+                      key={tarea._index}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        background: aiSelected[tarea._index] ? 'var(--gray-50)' : 'transparent',
+                        marginBottom: 4
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!aiSelected[tarea._index]}
+                        onChange={e => setAiSelected(prev => ({ ...prev, [tarea._index]: e.target.checked }))}
+                        style={{ marginTop: 3 }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>{tarea.titulo}</div>
+                        {tarea.descripcion && (
+                          <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 2 }}>{tarea.descripcion}</div>
+                        )}
+                      </div>
+                      {tarea.horas > 0 && (
+                        <span style={{ fontSize: 12, color: 'var(--gray-500)', whiteSpace: 'nowrap' }}>{tarea.horas}h</span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              ));
+            })()}
+          </div>
+        )}
       </Modal>
 
       {/* Modal Editar Proyecto */}

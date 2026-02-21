@@ -84,4 +84,69 @@ export const api = {
 
   // Gantt
   getGanttData: () => request('/gantt'),
+
+  // Gastos
+  getGastos: () => request('/gastos'),
+  getGasto: (id) => request(`/gastos/${id}`),
+  createGasto: async (formData) => {
+    const url = `${API_URL}/gastos`;
+    const response = await fetch(url, { method: 'POST', body: formData });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      throw new Error(error.error || 'Error en la petición');
+    }
+    return response.json();
+  },
+  updateGasto: async (id, formData) => {
+    const url = `${API_URL}/gastos/${id}`;
+    const response = await fetch(url, { method: 'PUT', body: formData });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      throw new Error(error.error || 'Error en la petición');
+    }
+    return response.json();
+  },
+  deleteGasto: (id) => request(`/gastos/${id}`, { method: 'DELETE' }),
+  getGastosResumenTrimestral: (year) => request(`/gastos/resumen-trimestral?year=${year}`),
+  getGastoArchivo: (filename) => `${API_URL.replace('/api', '')}/public/uploads/gastos/${filename}`,
+
+  // Dashboard Fiscal
+  getDashboardFiscal: (year) => request(`/dashboard/fiscal?year=${year}`),
+
+  // Recordatorios (Mi Dia)
+  getRecordatoriosHoy: () => request('/recordatorios/hoy'),
+  getRecordatoriosMatriz: () => request('/recordatorios/matriz'),
+  getRecordatoriosSummary: () => request('/recordatorios/summary'),
+  getRecordatorios: () => request('/recordatorios'),
+  getRecordatorio: (id) => request(`/recordatorios/${id}`),
+  createRecordatorio: (data) => request('/recordatorios', { method: 'POST', body: JSON.stringify(data) }),
+  updateRecordatorio: (id, data) => request(`/recordatorios/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteRecordatorio: (id) => request(`/recordatorios/${id}`, { method: 'DELETE' }),
+  toggleRecordatorio: (id) => request(`/recordatorios/${id}/toggle`, { method: 'PATCH' }),
+  updateRecordatorioCuadrante: (id, cuadrante) => request(`/recordatorios/${id}/cuadrante`, { method: 'PATCH', body: JSON.stringify({ cuadrante }) }),
+
+  // IA
+  getBriefing: () => request('/ai/briefing'),
+  generateTasks: (data) => request('/ai/generate-tasks', { method: 'POST', body: JSON.stringify(data) }),
+  aiChat: (data) => request('/ai/chat', { method: 'POST', body: JSON.stringify(data) }),
+  // Gmail
+  getGmailStatus: () => request('/gmail/status'),
+  getGmailAuthUrl: () => request('/gmail/auth'),
+  getGmailEmails: (max, q) => request(`/gmail/emails?max=${max || 20}${q ? '&q=' + encodeURIComponent(q) : ''}`),
+  getGmailEmail: (id) => request(`/gmail/emails/${id}`),
+  procesarEmail: (id) => request(`/gmail/emails/${id}/procesar`, { method: 'POST' }),
+  crearTareasDesdeEmail: (id, data) => request(`/gmail/emails/${id}/crear-tareas`, { method: 'POST', body: JSON.stringify(data) }),
+  disconnectGmail: () => request('/gmail/disconnect', { method: 'DELETE' }),
+
+  extractInvoice: async (file) => {
+    const url = `${API_URL}/ai/extract-invoice`;
+    const formData = new FormData();
+    formData.append('archivo', file);
+    const response = await fetch(url, { method: 'POST', body: formData });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      throw new Error(error.error || 'Error en la petición');
+    }
+    return response.json();
+  },
 };

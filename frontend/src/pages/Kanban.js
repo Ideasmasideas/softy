@@ -34,8 +34,9 @@ export default function Kanban() {
     organizarTareasPorEstado();
   }, [proyectos, selectedProyecto]);
 
-  async function loadData() {
+  async function loadData(showLoading = true) {
     try {
+      if (showLoading) setLoading(true);
       const proyectosData = await api.getProyectos();
       // Fetch all tasks for all projects
       const proyectosConTareas = await Promise.all(
@@ -140,6 +141,8 @@ export default function Kanban() {
         estado: nuevoEstado,
         completada: nuevoEstado === 'completada' ? 1 : 0
       });
+      // Reload data from backend so proyectos state is in sync (no loading spinner)
+      await loadData(false);
       addToast('Tarea actualizada');
     } catch (error) {
       // Revert optimistic update on failure

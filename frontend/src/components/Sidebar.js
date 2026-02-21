@@ -11,7 +11,12 @@ import {
   Settings,
   LogOut,
   Zap,
-  Trello
+  Trello,
+  Receipt,
+  Calculator,
+  Sparkles,
+  Brain,
+  Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -43,6 +48,10 @@ export default function Sidebar() {
           <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} end>
             <LayoutDashboard size={20} />
             Dashboard
+          </NavLink>
+          <NavLink to="/mi-dia" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Brain size={20} />
+            Mi Dia
           </NavLink>
         </div>
 
@@ -84,6 +93,30 @@ export default function Sidebar() {
               Recurrentes
             </NavLink>
           )}
+          {hasPermission('gastos') && (
+            <NavLink to="/gastos" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <Receipt size={20} />
+              Gastos
+            </NavLink>
+          )}
+          {hasPermission('fiscal') && (
+            <NavLink to="/fiscal" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              <Calculator size={20} />
+              Fiscal
+            </NavLink>
+          )}
+        </div>
+
+        <div className="nav-section">
+          <div className="nav-section-title">IA</div>
+          <NavLink to="/asistente" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Sparkles size={20} />
+            Asistente IA
+          </NavLink>
+          <NavLink to="/bandeja-email" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Mail size={20} />
+            Bandeja Email
+          </NavLink>
         </div>
 
         <div className="nav-section">

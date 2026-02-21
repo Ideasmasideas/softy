@@ -18,6 +18,12 @@ import Kanban from './pages/Kanban';
 import Configuracion from './pages/Configuracion';
 import FacturasRecurrentes from './pages/FacturasRecurrentes';
 import NuevaFacturaRecurrente from './pages/NuevaFacturaRecurrente';
+import Gastos from './pages/Gastos';
+import NuevoGasto from './pages/NuevoGasto';
+import DashboardFiscal from './pages/DashboardFiscal';
+import AsistenteIA from './pages/AsistenteIA';
+import MiDia from './pages/MiDia';
+import BandejaEmail from './pages/BandejaEmail';
 
 function App() {
   return (
@@ -38,6 +44,7 @@ function App() {
                     <main className="main-content">
                       <Routes>
                         <Route path="/" element={<Dashboard />} />
+                        <Route path="/mi-dia" element={<MiDia />} />
                         <Route path="/clientes" element={<Clientes />} />
                         <Route path="/proyectos" element={<Proyectos />} />
                         <Route path="/proyectos/:id" element={<ProyectoDetalle />} />
@@ -51,6 +58,12 @@ function App() {
                         <Route path="/usuarios" element={<Usuarios />} />
                         <Route path="/gantt" element={<Gantt />} />
                         <Route path="/kanban" element={<Kanban />} />
+                        <Route path="/gastos" element={<Gastos />} />
+                        <Route path="/gastos/nuevo" element={<NuevoGasto />} />
+                        <Route path="/gastos/:id/editar" element={<NuevoGasto />} />
+                        <Route path="/fiscal" element={<DashboardFiscal />} />
+                        <Route path="/asistente" element={<AsistenteIA />} />
+                        <Route path="/bandeja-email" element={<BandejaEmail />} />
                         <Route path="/configuracion" element={<Configuracion />} />
                       </Routes>
                     </main>

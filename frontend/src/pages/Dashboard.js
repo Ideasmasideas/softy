@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Users, 
-  FolderKanban, 
-  Euro, 
+import {
+  Users,
+  FolderKanban,
+  Euro,
   Clock,
   ArrowUpRight,
-  FileText 
+  FileText,
+  Brain,
+  AlertTriangle,
+  Flame
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { api } from '../utils/api';
@@ -30,6 +33,7 @@ const estadoClasses = {
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recordatoriosSummary, setRecordatoriosSummary] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -39,6 +43,10 @@ export default function Dashboard() {
     try {
       const result = await api.getDashboard();
       setData(result);
+      try {
+        const summary = await api.getRecordatoriosSummary();
+        setRecordatoriosSummary(summary);
+      } catch { /* not critical */ }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
@@ -110,6 +118,53 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Mi Dia Widget */}
+        {recordatoriosSummary && (recordatoriosSummary.vencidos > 0 || recordatoriosSummary.urgentes > 0 || recordatoriosSummary.pendientes > 0) && (
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div className="card-header">
+              <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Brain size={18} /> Mi Dia
+              </h3>
+              <Link to="/mi-dia" className="btn btn-sm btn-secondary">
+                Abrir <ArrowUpRight size={14} />
+              </Link>
+            </div>
+            <div className="card-body">
+              <div style={{ display: 'flex', gap: 32 }}>
+                {recordatoriosSummary.vencidos > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <AlertTriangle size={20} color="#ef4444" />
+                    <div>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: '#ef4444', fontFamily: 'Space Grotesk' }}>
+                        {recordatoriosSummary.vencidos}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>Vencidos</div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Flame size={20} color="#f59e0b" />
+                  <div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: '#f59e0b', fontFamily: 'Space Grotesk' }}>
+                      {recordatoriosSummary.urgentes || 0}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>Urgentes</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Brain size={20} color="var(--gray-400)" />
+                  <div>
+                    <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'Space Grotesk' }}>
+                      {recordatoriosSummary.pendientes || 0}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>Pendientes</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
           <div className="card">
