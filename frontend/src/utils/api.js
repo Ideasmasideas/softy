@@ -59,6 +59,18 @@ export const api = {
   // Configuración
   getConfig: () => request('/configuracion'),
   updateConfig: (data) => request('/configuracion', { method: 'PUT', body: JSON.stringify(data) }),
+  uploadLogo: async (file) => {
+    const url = `${API_URL}/configuracion/logo`;
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await fetch(url, { method: 'POST', body: formData });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
+      throw new Error(error.error || 'Error en la petición');
+    }
+    return response.json();
+  },
+  deleteLogo: () => request('/configuracion/logo', { method: 'DELETE' }),
 
   // Usuarios
   getUsuarios: () => request('/usuarios'),

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Save, Mail, Settings, CheckCircle, XCircle, FileEdit } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, Mail, Settings, CheckCircle, XCircle, FileEdit, Upload, Trash2 } from 'lucide-react';
 import { api } from '../utils/api';
 import { useToast } from '../context/ToastContext';
 
@@ -13,6 +13,9 @@ function EmpresaTab() {
     empresa_iban: '',
     empresa_bic: ''
   });
+  const [logo, setLogo] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { addToast } = useToast();
@@ -25,10 +28,38 @@ function EmpresaTab() {
     try {
       const data = await api.getConfig();
       setConfig(prev => ({ ...prev, ...data }));
+      if (data.empresa_logo_base64) setLogo(data.empresa_logo_base64);
     } catch (error) {
       addToast('Error al cargar configuración', 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const result = await api.uploadLogo(file);
+      setLogo(result.logo);
+      addToast('Logo subido correctamente');
+    } catch (error) {
+      addToast(error.message, 'error');
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  }
+
+  async function handleLogoDelete() {
+    if (!window.confirm('¿Eliminar el logo?')) return;
+    try {
+      await api.deleteLogo();
+      setLogo(null);
+      addToast('Logo eliminado');
+    } catch (error) {
+      addToast(error.message, 'error');
     }
   }
 
@@ -122,6 +153,42 @@ function EmpresaTab() {
                 placeholder="INGDESMMXXX"
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Logo de la Empresa</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {logo ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <img src={logo} alt="Logo" style={{ maxWidth: 120, maxHeight: 60, borderRadius: 4, border: '1px solid var(--gray-200)' }} />
+                  <button type="button" onClick={handleLogoDelete} className="btn" style={{ color: 'var(--danger)', padding: '6px 10px' }}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ) : (
+                <span style={{ fontSize: 13, color: 'var(--gray-400)' }}>Sin logo</span>
+              )}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleLogoUpload}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                className="btn"
+                disabled={uploadingLogo}
+                style={{ padding: '6px 14px', fontSize: 13 }}
+              >
+                <Upload size={14} />
+                {uploadingLogo ? 'Subiendo...' : logo ? 'Cambiar' : 'Subir logo'}
+              </button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>
+              PNG, JPG o WebP. Max 2MB. Aparece en facturas PDF y emails.
+            </p>
           </div>
 
           <div className="form-group">
